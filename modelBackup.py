@@ -69,7 +69,17 @@ def bio_classification_report(y_true, y_pred):
         labels = [class_indices[cls] for cls in tagset],
         target_names = tagset,
     )
-
+def getTrainerFeatures(ft):
+    #c1: coefficient for L1 penalty
+    #c2: coefficient for L2 penalty
+    #'feature.possible_transitions':
+    #   include transitions that are possible, but not observed
+    if ft == "dornescu" or ft == "honnibal":
+        return {'c1': 3.0,'c2': 1e-20,'feature.possible_transitions': True}
+    elif ft == 1 or ft == 2:
+        return {'c1': 0.5,'c2': 1e-3, 'max_iterations': 1000, 'feature.possible_transitions': True}
+    else:
+        raise Exception
 def main(training_file, testing_file, model_file, ft):
     
     start = time.time()
@@ -89,17 +99,10 @@ def main(training_file, testing_file, model_file, ft):
     # Create trainer model of CRF
     trainer = pycrfsuite.Trainer(verbose=False)
 
+    trainer.set_params(getTrainerFeatures(ft))    
+
     for xseq, yseq in zip(X_train, y_train):
         trainer.append(xseq, yseq)
-
-    trainer.set_params({
-        'c1': 0.5,   # coefficient for L1 penalty
-        'c2': 1e-3,  # coefficient for L2 penalty
-        'max_iterations': 1000,  # stop earlier
-    
-        # include transitions that are possible, but not observed
-        'feature.possible_transitions': True
-        })    
     
     # Train the model and save the trained model into model_file
     trainer.train(model_file)
@@ -119,9 +122,9 @@ def main(training_file, testing_file, model_file, ft):
     print('CRF model has been generated.')
     print('runtime:', end - start)
 
-training_file = "corpus/train.txt"
+training_file = "corpus/combined.txt"
 testing_file = "corpus/test.txt"
-model_file = "model.crfsuite"
+model_file = "models/model.crfsuite"
 
-main(training_file, testing_file, model_file, 2)
+main(training_file, testing_file, model_file, "honnibal")
 

@@ -103,126 +103,68 @@ def set_features2(sentence, i):
                 
     return features
 
-# ----------3------------
+#-----------Honnibal---------
 
-def baseFeature(sentence, i, prefix):
+def set_features_honnibal(sentence, i):
+    #cB = commaBefore
+    word = sentence[i][1]
+    postag = sentence[i][4]
+    cB = "0"
+    if i > 1:
+        for x in range(i,1,-1):
+            if sentence[x][1] == ',':
+                cB = "1"
+                break
+    features = [
+        'cB_postag=' + cB+postag
+    ]
+    return features
+
+#-----------Dornescu---------
+
+def set_features_dornescu(sentence, i):
     word = sentence[i][1]
     postag = sentence[i][4]
     # Set the features of the word
-    features = [prefix + feat for feat in
-        [
+    features = [
         'word.lower=' + word.lower(),
         'word.isupper=%s' % word.isupper(),
         'word.istitle=%s' % word.istitle(),
         'postag=' + postag,
         'postag[:2]=' + postag[:2],
-        'lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postag))
-    ]]
-
-    return features
-
-def mainFeature(sentence, i):
-    word = sentence[i][1]
-    postag = sentence[i][4]
-    features = baseFeature(sentence, i, '')
+        'lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postag)),
+    ]
     if i > 0:
-        features.extend(extractWordFeatures(sentence, i - 1 , '-1:'))
+        # Set the features of relationship with previous word.
+        wordBefore = sentence[i-1][1]
+        postagBefore = sentence[i-1][4]
+        features.extend([
+            '-1:word.lower=' + wordBefore.lower(),
+            '-1:word.isupper=%s' % wordBefore.isupper(),
+            '-1:word.istitle=%s' % wordBefore.istitle(),
+            '-1postag=' + postagBefore,
+            '-1postag[:2]=' + postagBefore[:2],
+            '-1lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagBefore)),
+        ])
     else:
-        features.append('BOS=true')
+        features.append('B_o_S') #Beginning of Sentence
         
     if i < len(sentence)-1:
-        features.extend(ColingBaselineClassifier.extractWordFeatures(sentence, i + 1 , '+1:'))
+        # Set the features of relationship with next word.
+        wordAfter = sentence[i+1][1]
+        postagAfter = sentence[i+1][4]
+        features.extend([
+            '+1:word.lower=' + wordAfter.lower(),
+            '+1:word.isupper=%s' % wordAfter.isupper(),
+            '+1:word.istitle=%s' % wordAfter.istitle(),
+            '+1postag=' + postagAfter,
+            '+1postag[:2]=' + postagAfter[:2],
+            '+1lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagAfter)),
+        ])
     else:
-        features.append('EOS=true')                    
+        features.append('E_o_S') #End of Sentence
+                
     return features
-def set_features4(sentence, i):
-    def featCommaBefore(sentence, nodeIndex):
-        indBefore = min(tree[nodeIndex].get_subtree()) - 1
-        ret = 'commaBefore='
-        if indBefore < 1:
-            return ret + '0'
-        return ret + '1' if [tree[indBefore].word == ','] else ret + '0'
-    def prefixFeats(prefix, feats):
-        return [prefix + feat for feat in feats]
-
-    #word = sentence[i][1].lower()
-    candidateType = sentence[i][10]+sentence[i][11]
-    baseFeatures = mainFeature(sentence, i)
-    parentInd = sentence[i][8] #maybe not 8, but 9?
-
-    parentFeatures = prefixFeats('parent:',mainFeature(sentence, parentInd))
-
-    #Type and (not-working)Comma Features
-    newFeatres = ['type=' + candidateType]#, featCommaBefore(sentence, i),]
-
-    #POBJ
-    for i,child in enumerate([child for child in sentence[i].children if child.parent_relation == 'PMOD']):
-            newFeatres.extend(prefixFeats('pobj{0}:'.format(i), ColingBaselineClassifier._extractFeatures(tree, child.id, candidateType)))
-
-    allFeatures =  baseFeatures + parentFeatures + newFeatres
-
-    allFeatures += ['{0}|{1}={2}|{3}'.format('type', feat.split('=')[0], candidateType, feat.split('=')[1])
-                                                 for feat in allFeatures]
-
-    print(allFeatures)
-    return allFeatures
-
-#-----------5---------
-
-def featCommaBefore(tree, nodeIndex):
-    indBefore = min(tree[nodeIndex].get_subtree()) - 1
-    ret = 'commaBefore='
-    if indBefore < 1:
-        return ret + '0'
-    return ret + '1' if [tree[indBefore].word == ','] else ret + '0'
-    
-def prefixFeats(prefix, feats):
-    return [prefix + feat for feat in feats] 
-
-def extractWordFeatures(tree, nodeIndex, featuresPrefix):
-    word = tree[nodeIndex].word
-    postag = tree[nodeIndex].pos
-    return [featuresPrefix + feat for feat in
-            [
-        'word.lower=' + word.lower(),
-        'word.isupper=%s' % word.isupper(),
-        'word.istitle=%s' % word.istitle(),
-        'postag=' + postag,
-        'postag[:2]=' + postag[:2],
-        'lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postag))
-    ]]
-
-def extractLMRFeatures(tree, nodeIndex, candidateType):
-    print(nodeIndex,candidateType)
-    word = tree[nodeIndex].word
-    postag = tree[nodeIndex].pos
-    features = extractWordFeatures(tree, nodeIndex, '')
-    if nodeIndex > 0:
-        features.extend(extractWordFeatures(tree, nodeIndex - 1 , '-1:'))
-    else:
-        features.append('BOS=true')
-        
-    if nodeIndex < len(tree)-1:
-        features.extend(extractWordFeatures(tree, nodeIndex + 1 , '+1:'))
-    else:
-        features.append('EOS=true')                    
-    return features
-
-def extractExtendedFeatures(tree, nodeIndex, candidateType):
-    word = tree[nodeIndex].word.lower()
-    baseFeats = extractLMRFeatures(tree, nodeIndex, candidateType)
-    parentInd = tree[nodeIndex].parent_id
-    sent = ' '.join([tree[tok].word for tok in sorted(tree)[1:]])
-    # parent feats
-    parentFeats = prefixFeats('parent:', extractLMRFeatures( tree, parentInd, candidateType))
-    # type and comma
-    newFeats = ['type=' + candidateType, featCommaBefore(tree, nodeIndex)]
-    # pobj
-    for i,child in enumerate([child for child in tree[nodeIndex].children if child.parent_relation == 'PMOD']):
-        newFeats.extend(prefixFeats('pobj{0}:'.format(i), extractLMRFeatures(tree, child.id, candidateType)))
-    feats =  baseFeats + parentFeats + newFeats
-    feats += ['{0}|{1}={2}|{3}'.format('type', feat.split('=')[0], candidateType, feat.split('=')[1]) for feat in feats]
-    return feats
 
 def isdot(word):
     return True if word in '.' else False
@@ -241,17 +183,15 @@ def get_features(sent, type):
         return [set_features1(sent, i) for i in range(len(sent))]
     elif type == 2:
         return [set_features2(sent, i) for i in range(len(sent))]
-    elif type == 3:
-        return [mainFeature(sent, i) for i in range(len(sent))]
-    elif type == 4:
-        return [set_features4(sent, i) for i in range(len(sent))]
-    elif type == 5:
-        return [extractExtendedFeatures(sent, i) for i in range(len(sent))]
+    elif type == "dornescu":
+        return [set_features_dornescu(sent, i) for i in range(len(sent))]
+    elif type == "honnibal":
+        return [set_features_honnibal(sent, i) for i in range(len(sent))]
     else:
         raise Exception
 
 def get_labels(sent):
-    return [x[-1] for x in sent]
+    return [x[-2] for x in sent]
 
 def get_tokens(sent):
     return [x[-2] for x in sent]   
