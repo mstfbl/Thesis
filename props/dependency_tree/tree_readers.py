@@ -167,7 +167,7 @@ def create_dep_trees_from_stream(stream, wsjInfo_exists, collapsed=False):
                words.append(node[1])
                id = int(node[0])
                dep_trees_data[id]=node
-               dep_trees_nodes[id]=DepTree(pos=node[3],word=node[1],id=node[0],parent=None,parent_relation=node[7],children=[],wsj_id = int(wsj_id), sent_id = int(sent_id))
+               dep_trees_nodes[id]=DepTree(pos=node[3],word=node[1],id=node[0],parent=None,parent_relation=node[9],children=[],wsj_id = int(wsj_id), sent_id = int(sent_id))
 
        # Here all tree nodes are already parsed
        else:
@@ -175,7 +175,7 @@ def create_dep_trees_from_stream(stream, wsjInfo_exists, collapsed=False):
            for i in filter(lambda x:x,dep_trees_nodes.keys()):
                node_data = dep_trees_data[i]
                node = dep_trees_nodes[i]
-               parent_id = int (node_data[6])
+               parent_id = int (node_data[8])
                # Set node's parent
                node.set_parent(dep_trees_nodes[parent_id])
                # Set node's parent id
