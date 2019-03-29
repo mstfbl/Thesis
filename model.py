@@ -19,7 +19,6 @@ from nltk.corpus.reader.wordnet import NOUN, VERB, ADJ, ADV
 from props.dependency_tree.tree_readers import create_dep_trees_from_stream
 import SpaCyParserWrapper
 import pycrfsuite
-
 import MyClassifiers
 
 def get_input (input_file):
@@ -105,6 +104,10 @@ def create_report(y_true, y_pred):
         headers=['Modifier Type', '#', 'Accuracy', 'Precision', 'Recall', 'F1'])
 
 def getScoreData(tagset, d):
+    # d[tag][1]: true positive - pred: NR, actual: NR
+    # d[tag][2]: true negative - pred: R, actual:R
+    # d[tag][3]: false positive - pred: NR, actual: R
+    # d[tag][4]: false negative - pred: R, actual: NR
     returnLst = []
     tTP = 0.0
     tTN = 0.0
@@ -158,8 +161,8 @@ def getTrainerFeatures(ft):
         return {'c1': 0.5,'c2': 1e-3, 'max_iterations': 1000, 'feature.possible_transitions': True}
     else:
         raise Exception """
-    #return {'c1': 0.5,'c2': 1e-3, 'max_iterations': 1000, 'feature.possible_transitions': True} #Own version
-    return {'c1': 3.0,'c2': 1e-20,'feature.possible_transitions': True} #Stanovsky version
+    return {'c1': 0.5,'c2': 1e-3, 'max_iterations': 1000, 'feature.possible_transitions': True} #Own version
+    #return {'c1': 3.0,'c2': 1e-20,'feature.possible_transitions': True} #Stanovsky version
 
 def main(training_file, testing_file, model_file, ft):
     start = time.time()
@@ -219,13 +222,12 @@ def printReport(y_test, y_pred, ft):
     print('-----------------------------------------------------------------------')
     print('')
 
-training_file = "corpus/combined.txt"
+training_file = "corpus/combined_train_and_dev.txt"
 testing_file = "corpus/test.txt"
 model_file_loc = "models/"
 
 #main(training_file, testing_file, model_file_loc, "unigram")
 #main(training_file, testing_file, model_file_loc, "bigram")
-main(training_file, testing_file, model_file_loc, "trigram")
-#main(training_file, testing_file, model_file_loc, "stanovsky")
-#main(training_file, testing_file, model_file_loc, "dornescu")
-#main(training_file, testing_file, model_file_loc, "honnibal")
+main(training_file, testing_file, model_file_loc, "novel")
+main(training_file, testing_file, model_file_loc, "stanovsky")
+main(training_file, testing_file, model_file_loc, "dornescu")

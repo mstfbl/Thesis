@@ -83,7 +83,7 @@ def set_features_dornescu(sentence, i):
     modifierType = sentence[i][-1]
     # Set the features of the word
     features = [
-        #'word.lower=' + word.lower(),
+        'word.lower=' + word.lower(),
         #'word.isupper=%s' % word.isupper(),
         #'word.istitle=%s' % word.istitle(),
         'postag=' + postag,
@@ -97,7 +97,7 @@ def set_features_dornescu(sentence, i):
         postagBefore = sentence[i-1][4]
         modifierTypeBefore = sentence[i-1][-1]
         features.extend([
-            #'-1:word.lower=' + wordBefore.lower(),
+            '-1:word.lower=' + wordBefore.lower(),
             #'-1:word.isupper=%s' % wordBefore.isupper(),
             #'-1:word.istitle=%s' % wordBefore.istitle(),
             '-1postag=' + postagBefore,
@@ -114,7 +114,7 @@ def set_features_dornescu(sentence, i):
         postagAfter = sentence[i+1][4]
         modifierTypeAfter = sentence[i+1][-1]
         features.extend([
-            #'+1:word.lower=' + wordAfter.lower(),
+            '+1:word.lower=' + wordAfter.lower(),
             #'+1:word.isupper=%s' % wordAfter.isupper(),
             #'+1:word.istitle=%s' % wordAfter.istitle(),
             '+1postag=' + postagAfter,
@@ -138,8 +138,8 @@ def set_features_stanovsky(sentence, i):
     # Set the features of the word
     features = [
         'word.lower=' + word.lower(),
-        'word.isupper=%s' % word.isupper(),
-        'word.istitle=%s' % word.istitle(),
+        #'word.isupper=%s' % word.isupper(),
+        #'word.istitle=%s' % word.istitle(),
         'postag=' + postag,
         'lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postag)),
         'modifierType=' + modifierType]
@@ -151,8 +151,8 @@ def set_features_stanovsky(sentence, i):
         modifierTypeBefore = sentence[i-1][-1]
         features.extend([
             '-1:word.lower=' + wordBefore.lower(),
-            '-1:word.isupper=%s' % wordBefore.isupper(),
-            '-1:word.istitle=%s' % wordBefore.istitle(),
+            #'-1:word.isupper=%s' % wordBefore.isupper(),
+            #'-1:word.istitle=%s' % wordBefore.istitle(),
             '-1postag=' + postagBefore,
             '-1lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagBefore)),
             '-1modifierType=' + modifierTypeBefore    
@@ -167,18 +167,20 @@ def set_features_stanovsky(sentence, i):
         modifierTypeAfter = sentence[i+1][-1]
         features.extend([
             '+1:word.lower=' + wordAfter.lower(),
-            '+1:word.isupper=%s' % wordAfter.isupper(),
-            '+1:word.istitle=%s' % wordAfter.istitle(),
+            #'+1:word.isupper=%s' % wordAfter.isupper(),
+            #'+1:word.istitle=%s' % wordAfter.istitle(),
             '+1postag=' + postagAfter,
             '+1lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagAfter)),
             '+1modifierType=' + modifierTypeAfter
         ])
     else:
-        features.append('E_o_S') #End of Sentence           
+        features.append('E_o_S') #End of Sentence   
+    '''        
     embs = loadEmbs()
     if modifierType == 'PREADJ-MOD':
         if word.lower() in embs:  
             features += ['emb{0}={1}'.format(i, emb) for (i, emb) in enumerate(embs[word.lower()])]     
+    '''
     return features
 
 def loadEmbs():
@@ -243,20 +245,21 @@ def set_features_bigram(sentence, i):
         features.append('B_o_S') #Beginning of Sentence              
     return features
 
-def set_features_trigram(sentence, i):
+def set_features_novel(sentence, i):
     word = sentence[i][1]
     postag = sentence[i][4]
     modifierType = sentence[i][-1]
 
     # Set the features of the word
     features = [
+        'relativePositionInSentence=' + relativePositionInSentence(i, len(sentence)),
         'word.lower=' + word.lower(),
-        'postag=' + postag,
+        'postag[:2]=' + postag[:2],
         'lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postag)),
-        'modifierType=' + modifierType,
-        'type|postag=' + modifierType + "|" + postag]
+        'modifierType=' + modifierType]
 
-    if i > 0 and i < len(sentence)-1:
+
+    if i > 0 and i < len(sentence) - 1:
         wordBefore = sentence[i-1][1]
         postagBefore = sentence[i-1][4]
         modifierTypeBefore = sentence[i-1][-1]
@@ -275,12 +278,12 @@ def set_features_trigram(sentence, i):
         postagBefore = sentence[i-1][4]
         modifierTypeBefore = sentence[i-1][-1]
         features.extend([
-            '-1:word.lower=' + wordBefore.lower(),
-            '-1postag=' + postagBefore,
-            '-1lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagBefore)),
-            '-1modifierType=' + modifierTypeBefore,
-            '-1type|-1postag=' + modifierTypeBefore + '|' + postagBefore,
-            '-1word.lower|word.lower=' + wordBefore + '|' + word    
+            '-1:word.lower|word.lower=' + wordBefore.lower() + '|' + word.lower(),
+            '-1postag|postag=' + postagBefore + '|' + postag,
+            '-1postag[:2]|postag[:2]=' + postagBefore[:2] + '|' + postag[:2],
+            '-1lemma|lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagBefore)) + '|' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postag)),
+            '-1modifierType|modifierType=' + modifierTypeBefore + '|' + modifierType,
+            '-1type|-1postag|type|postag=' + modifierTypeBefore + '|' + postagBefore + '|' + modifierType + postag
         ])
     else:
         features.append('B_o_S') #Beginning of Sentence
@@ -291,16 +294,37 @@ def set_features_trigram(sentence, i):
         postagAfter = sentence[i+1][4]
         modifierTypeAfter = sentence[i+1][-1]
         features.extend([
-            '+1:word.lower=' + wordAfter.lower(),
-            '+1postag=' + postagAfter,
-            '+1lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagAfter)),
-            '+1modifierType=' + modifierTypeAfter,
-            '+1type|+1postag=' + modifierTypeAfter + "|" + postagAfter,
-            '+1word.lower|word.lower=' + wordAfter + '|' + word     
+            'word.lower|+1:word.lower= ' + word.lower() + '|' + wordAfter.lower(),
+            'postag|+1postag=' + postag + '|' + postagAfter,
+            'postag[:2]|+1postag[:2]=' + postag + '|' + postagAfter[:2],
+            'lemma|+1lemma=' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postag)) + '|' + ColingBaselineClassifier.lmtzr.lemmatize(word, convertPtbToLemmatizerPos(postagAfter)),
+            'modifierType|+1modifierType=' + modifierType + '|' + modifierTypeAfter,
+            'type|postag|+1type|+1postag=' + modifierType + '|' + postag + '|' + modifierTypeAfter + "|" + postagAfter,
         ])
     else:
-        features.append('E_o_S') #End of Sentence  
-    return features  
+        features.append('E_o_S') #End of Sentence
+
+    if modifierType == 'PREADJ-MOD' or modifierType == 'PP-MOD':
+        features.append('relativePositionInSentence=' + relativePositionInSentence(i, len(sentence)))
+    
+    '''
+    embs = loadEmbs()
+    if modifierType == 'PREADJ-MOD':
+        print(modifierType)
+        if word.lower() in embs:  
+            features += ['emb{0}={1}'.format(i, emb) for (i, emb) in enumerate(embs[word.lower()])]     
+    '''
+    return features
+
+def relativePositionInSentence(wordPos, lengthOfSentence):
+    if float(wordPos)/lengthOfSentence < 0.25:
+        return "1" #first Quadrant
+    elif float(wordPos)/lengthOfSentence < 0.50:
+        return "2" #second Quadrant
+    elif float(wordPos)/lengthOfSentence < 0.75:
+        return "3" #second Quadrant
+    else:
+        return "4" #fourth Quadrant
 
 def isdot(word):
     return True if word in '.' else False
@@ -318,14 +342,14 @@ def get_features(sent, type):
         return [set_features_dornescu(sent, i) for i in range(len(sent))]
     elif type == "honnibal":
         return [set_features_honnibal(sent, i) for i in range(len(sent))]
-    elif type == "honnibal_CRF_Adapted":
+    elif type == "honnibal":
         return [set_features_honnibal_CRF_Adapted(sent, i) for i in range(len(sent))]
     elif type == "unigram":
         return [set_features_unigram(sent, i) for i in range(len(sent))]
     elif type == "bigram":
         return [set_features_bigram(sent, i) for i in range(len(sent))]
-    elif type == "trigram":
-        return [set_features_trigram(sent, i) for i in range(len(sent))]
+    elif type == "novel":
+        return [set_features_novel(sent, i) for i in range(len(sent))]
     elif type == "stanovsky":
         return [set_features_stanovsky(sent, i) for i in range(len(sent))]
     else:
